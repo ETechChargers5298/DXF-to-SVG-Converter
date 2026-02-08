@@ -46,7 +46,7 @@ with col1:
         st.warning("Logo file 'sparky_logo.png' not found.")
 
 with col2:
-    st.title("Glowforge DXF to SVG")
+    st.title("Glowforge DXF to SVG Converter")
 
 # Main Description (Not italicized)
 st.markdown("Utility to convert .DXF files from OnShape to .SVG files to use with Glowforge Laser Cutter")
@@ -103,4 +103,5 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Conversion failed: {e}")
+
 
