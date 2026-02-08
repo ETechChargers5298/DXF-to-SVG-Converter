@@ -39,22 +39,20 @@ col1, col2 = st.columns((1, 4))
 
 with col1:
     try:
-        # Placeholder for your logo file (e.g., sparky_logo.png)
+        # Display logo file
         st.image("sparky_logo.png", width=100, output_format='PNG')
     except FileNotFoundError:
-        # Show a warning if you haven't added the logo file to your directory
+        # Show a warning if logo file missing
         st.warning("Logo file 'sparky_logo.png' not found.")
 
 with col2:
     st.title("Glowforge DXF to SVG Converter")
 
-# Main Description (Not italicized)
+# Main Description
 st.markdown("Utility to convert .DXF files from OnShape to .SVG files to use with Glowforge Laser Cutter")
 
-# New Italicized Link (Clickable)
+# Link to GitHub
 st.markdown("*See app code at [github.com/ETechChargers5298/DXF-to-SVG-Converter](https://github.com/ETechChargers5298/DXF-to-SVG-Converter)*")
-# --- End of Updated Headings ---
-
 
 # 1. Units Toggle
 unit_selection = st.radio("**1. CHOOSE ORIGINAL DXF UNITS FROM ONSHAPE**", ["Inches", "Millimeters"], horizontal=True)
@@ -89,11 +87,11 @@ if uploaded_file is not None:
         clean_svg = re.sub(r'<rect\s+[^>]*/>', '', svg_string)
         clean_svg = re.sub(r'<rect\s+[^>]*>.*?</rect>', '', clean_svg, flags=re.DOTALL)
 
-        st.subheader(f"Clean Preview ({unit_selection})")
+        st.subheader(f"SVG File Preview ({unit_selection})")
         st.image(clean_svg, use_container_width=True)
         
         st.download_button(
-            label="Download Clean 1:1 SVG",
+            label="Download SVG",
             data=clean_svg,
             file_name=uploaded_file.name.replace(".dxf", ".svg"),
             mime="image/svg+xml"
@@ -103,5 +101,6 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Conversion failed: {e}")
+
 
 
