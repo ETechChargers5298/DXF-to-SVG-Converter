@@ -2,7 +2,7 @@ import streamlit as st
 import re
 import io
 import ezdxf
-from ezdxf import recover
+from ezdxf import recover, bbox
 from ezdxf.addons.drawing import RenderContext, Frontend
 from ezdxf.addons.drawing import svg, layout, config
 from io import BytesIO
@@ -17,11 +17,19 @@ st.markdown(f"""
     .st-emotion-cache-2trqyj {{
         color: {TEAM_BLUE_HEX};
     }}
-    .stButton>button {{
+    
+    .stButton>button, .stDownloadButton>button {{
         background-color: {TEAM_GREEN_HEX} !important;
         border-color: {TEAM_GREEN_HEX} !important;
         color: white !important;
     }}
+    
+    .stButton>button:hover, .stDownloadButton>button:hover {{
+        background-color: #5e923d !important;
+        border-color: #5e923d !important;
+        color: white !important;
+    }}
+
     .stSuccess {{
         background-color: #E8F5E9;
         color: {TEAM_GREEN_HEX};
@@ -29,13 +37,13 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-
 # --- Interface Headings and Layout ---
 col1, col2 = st.columns((1, 4))
 
 with col1:
     try:
-        st.image("sparky_logo.png", width=100, output_format='PNG')
+        # FIX: Explicitly using the new width syntax for the logo
+        st.image("sparky_logo.png", width=100) 
     except FileNotFoundError:
         st.warning("Logo file 'sparky_logo.png' not found.")
 
@@ -60,36 +68,42 @@ if uploaded_file is not None:
         msp = doc.modelspace()
         
         ctx = RenderContext(doc)
-        
-        # We keep policy OFF to avoid ezdxf's internal (often buggy) background rect
         cfg = config.Configuration(
             background_policy=config.BackgroundPolicy.OFF,
-            color_policy=config.ColorPolicy.BLACK # Ensures lines are visible on white
+            color_policy=config.ColorPolicy.BLACK 
         )
         
         backend = svg.SVGBackend()
         frontend = Frontend(ctx, backend, config=cfg)
         frontend.draw_layout(msp, finalize=True)
         
-        # 2. 1:1 Scaling
         page = layout.Page(0, 0, layout.Units.mm)
         settings = layout.Settings(scale=scale_factor, fit_page=False)
         
-        # 3. Generate and Clean SVG
         svg_string = backend.get_string(page, settings=settings)
         
-        # 4. AGGRESSIVE CLEANUP & BACKGROUND FIX
-        # First, remove any existing background rectangles ezdxf might have put in
         clean_svg = re.sub(r'<rect\s+[^>]*/>', '', svg_string)
-        
-        # Now, inject a full-size white background rectangle at the start of the SVG content
-        # This looks for the opening <svg> tag and inserts a 100% width/height white rect right after it
         background_rect = '<rect width="100%" height="100%" fill="white" />'
         clean_svg = re.sub(r'(<svg[^>]*>)', r'\1' + background_rect, clean_svg)
 
+        st.success("File processed successfully!")
+
         st.subheader(f"3. Preview SVG File ({unit_selection})")
-        # Display the SVG with the injected white background
-        st.image(clean_svg, use_container_width=True)
+        
+        # FIX: Explicitly using the new width syntax for the preview
+        st.image(clean_svg, width="stretch")
+
+        try:
+            extents = bbox.extents(msp)
+            width_dxf = abs(extents.extmax.x - extents.extmin.x)
+            height_dxf = abs(extents.extmax.y - extents.extmin.y)
+            
+            display_w = width_dxf if unit_selection == "Inches" else width_dxf / 25.4
+            display_h = height_dxf if unit_selection == "Inches" else height_dxf / 25.4
+            
+            st.info(f"**Calculated Size:** {display_w:.3f}\" wide x {display_h:.3f}\" high")
+        except:
+            pass 
 
         st.subheader(f"4. Download SVG")
         st.download_button(
@@ -98,8 +112,6 @@ if uploaded_file is not None:
             file_name=uploaded_file.name.replace(".dxf", ".svg"),
             mime="image/svg+xml"
         )
-        
-        st.success("File processed successfully!")
 
     except Exception as e:
         st.error(f"Conversion failed: {e}")
