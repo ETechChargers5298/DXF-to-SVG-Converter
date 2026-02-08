@@ -46,7 +46,7 @@ with col1:
         st.warning("Logo file 'sparky_logo.png' not found.")
 
 with col2:
-    st.title("Glowforge DXF to SVG Converter")
+    st.title("Glowforge DXF to SVG File Converter")
 
 # Main Description
 st.markdown("Utility to convert .DXF files from OnShape to .SVG files to use with Glowforge Laser Cutter")
@@ -55,10 +55,12 @@ st.markdown("Utility to convert .DXF files from OnShape to .SVG files to use wit
 st.markdown("*See app code at [github.com/ETechChargers5298/DXF-to-SVG-Converter](https://github.com/ETechChargers5298/DXF-to-SVG-Converter)*")
 
 # 1. Units Toggle
-unit_selection = st.radio("**1. CHOOSE ORIGINAL DXF UNITS FROM ONSHAPE**", ["Inches", "Millimeters"], horizontal=True)
+st.subheader(f"1. Choose Units")
+unit_selection = st.radio("Select original .dxf units from OnShape:", ["Inches", "Millimeters"], horizontal=True)
 scale_factor = 25.4 if unit_selection == "Inches" else 1.0
 
-uploaded_file = st.file_uploader("**2. UPLOAD ONSHAPE DXF**", type="dxf")
+st.subheader(f"2. Upload DXF File")
+uploaded_file = st.file_uploader("Select .dxf file from OnShape:", type="dxf")
 
 if uploaded_file is not None:
     try:
@@ -87,11 +89,12 @@ if uploaded_file is not None:
         clean_svg = re.sub(r'<rect\s+[^>]*/>', '', svg_string)
         clean_svg = re.sub(r'<rect\s+[^>]*>.*?</rect>', '', clean_svg, flags=re.DOTALL)
 
-        st.subheader(f"SVG File Preview ({unit_selection})")
+        st.subheader(f"3. Preview SVG File ({unit_selection})")
         st.image(clean_svg, use_container_width=True)
-        
+
+        st.subheader(f"4. Download SVG")
         st.download_button(
-            label="Download SVG",
+            label="Click to Download SVG File",
             data=clean_svg,
             file_name=uploaded_file.name.replace(".dxf", ".svg"),
             mime="image/svg+xml"
@@ -101,6 +104,5 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Conversion failed: {e}")
-
 
 
