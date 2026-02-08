@@ -7,25 +7,21 @@ from ezdxf.addons.drawing import RenderContext, Frontend
 from ezdxf.addons.drawing import svg, layout, config
 from io import BytesIO
 
-# Define team colors (based on typical ETech Chargers colors)
-TEAM_BLUE_HEX = "#002060" # Used for primary text/headers
-TEAM_GREEN_HEX = "#74B44C" # Used for buttons and success messages
-BACKGROUND_COLOR = "#FFFFFF"
+# Define team colors
+TEAM_BLUE_HEX = "#002060" 
+TEAM_GREEN_HEX = "#74B44C" 
 
 # --- Configuration for Logo and Colors ---
 st.markdown(f"""
 <style>
-    /* Change primary color for general text/headers (based on .css-2trqyj from your file) */
     .st-emotion-cache-2trqyj {{
         color: {TEAM_BLUE_HEX};
     }}
-    /* Style for buttons (background and border color) */
     .stButton>button {{
         background-color: {TEAM_GREEN_HEX} !important;
         border-color: {TEAM_GREEN_HEX} !important;
         color: white !important;
     }}
-    /* Style for the success message background */
     .stSuccess {{
         background-color: #E8F5E9;
         color: {TEAM_GREEN_HEX};
@@ -39,19 +35,14 @@ col1, col2 = st.columns((1, 4))
 
 with col1:
     try:
-        # Display logo file
         st.image("sparky_logo.png", width=100, output_format='PNG')
     except FileNotFoundError:
-        # Show a warning if logo file missing
         st.warning("Logo file 'sparky_logo.png' not found.")
 
 with col2:
     st.title("Glowforge DXF to SVG File Converter")
 
-# Main Description
 st.markdown("Utility to convert .DXF files from OnShape to .SVG files to use with Glowforge Laser Cutter")
-
-# Link to GitHub
 st.markdown("*See app code at [github.com/ETechChargers5298/DXF-to-SVG-Converter](https://github.com/ETechChargers5298/DXF-to-SVG-Converter)*")
 
 # 1. Units Toggle
@@ -69,9 +60,11 @@ if uploaded_file is not None:
         msp = doc.modelspace()
         
         ctx = RenderContext(doc)
+        
+        # We keep policy OFF to avoid ezdxf's internal (often buggy) background rect
         cfg = config.Configuration(
             background_policy=config.BackgroundPolicy.OFF,
-            color_policy=config.ColorPolicy.COLOR
+            color_policy=config.ColorPolicy.BLACK # Ensures lines are visible on white
         )
         
         backend = svg.SVGBackend()
@@ -85,11 +78,17 @@ if uploaded_file is not None:
         # 3. Generate and Clean SVG
         svg_string = backend.get_string(page, settings=settings)
         
-        # 4. AGGRESSIVE CLEANUP: Strip the bounding box
+        # 4. AGGRESSIVE CLEANUP & BACKGROUND FIX
+        # First, remove any existing background rectangles ezdxf might have put in
         clean_svg = re.sub(r'<rect\s+[^>]*/>', '', svg_string)
-        clean_svg = re.sub(r'<rect\s+[^>]*>.*?</rect>', '', clean_svg, flags=re.DOTALL)
+        
+        # Now, inject a full-size white background rectangle at the start of the SVG content
+        # This looks for the opening <svg> tag and inserts a 100% width/height white rect right after it
+        background_rect = '<rect width="100%" height="100%" fill="white" />'
+        clean_svg = re.sub(r'(<svg[^>]*>)', r'\1' + background_rect, clean_svg)
 
         st.subheader(f"3. Preview SVG File ({unit_selection})")
+        # Display the SVG with the injected white background
         st.image(clean_svg, use_container_width=True)
 
         st.subheader(f"4. Download SVG")
@@ -104,5 +103,3 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Conversion failed: {e}")
-
-
